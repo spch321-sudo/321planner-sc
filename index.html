@@ -6045,6 +6045,7 @@ function openTodoModal(){
   var el=document.getElementById('todo-modal');
   if(!el)return;
   document.getElementById('todo-input').value='';
+  _editTodoId=null;
   renderTodoList();
   el.style.display='flex';
   setTimeout(function(){document.getElementById('todo-input').focus();},200);
@@ -6072,6 +6073,19 @@ function clearDoneTodos(){
   saveTodos(getTodos().filter(function(t){return !t.done;}));
   renderTodoList();
 }
+var _editTodoId=null;
+function startEditTodo(id){_editTodoId=id;renderTodoList();}
+function cancelEditTodo(){_editTodoId=null;renderTodoList();}
+function saveEditTodo(id){
+  var ei=document.getElementById('todo-edit-input');
+  var v=(ei&&ei.value||'').trim();
+  if(!v){toast('请输入待办事项','#e05c3a');return;}
+  var todos=getTodos();
+  todos.forEach(function(t){if(t.id===id)t.text=v;});
+  saveTodos(todos);
+  _editTodoId=null;
+  renderTodoList();
+}
 function renderTodoList(){
   var el=document.getElementById('todo-list');
   if(!el)return;
@@ -6083,13 +6097,23 @@ function renderTodoList(){
   if(done>0)h+='<div data-clear-done="1" style="padding:4px 10px;background:#fdf0ec;border:1px solid #e05c3a40;border-radius:8px;color:#e05c3a;font-size:12px;font-weight:700;cursor:pointer">清除已完成</div>';
   h+='</div>';
   todos.forEach(function(t){
-    h+='<div style="background:#fff;border-radius:10px;padding:11px 13px;margin-bottom:8px;display:flex;align-items:center;gap:10px;opacity:'+(t.done?.55:1)+'">';
+    if(t.id===_editTodoId){
+      h+='<div style="background:#eef3fb;border-radius:10px;padding:10px 11px;margin-bottom:8px;display:flex;align-items:center;gap:8px">';
+      h+='<input id="todo-edit-input" type="text" maxlength="100" value="'+t.text.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')+'" style="flex:1;font-size:15px;padding:8px 10px;border:1.5px solid #1e4d8c;border-radius:8px;color:#1e3252;background:#fff;min-width:0">';
+      h+='<div data-save-edit="'+t.id+'" style="background:#0a8f84;color:#fff;border-radius:8px;padding:8px 12px;font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0">保存</div>';
+      h+='<div data-cancel-edit="1" style="background:#eceff5;color:#7a8fa8;border-radius:8px;padding:8px 12px;font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0">取消</div>';
+      h+='</div>';
+      return;
+    }
+    h+='<div style="background:#fff;border-radius:10px;padding:11px 13px;margin-bottom:8px;display:flex;align-items:center;gap:8px;opacity:'+(t.done?.55:1)+'">';
     h+='<div data-tog-todo="'+t.id+'" style="width:24px;height:24px;border-radius:6px;border:2px solid '+(t.done?'#0a8f84':'#d8dce8')+';background:'+(t.done?'#0a8f84':'transparent')+';color:#fff;font-size:14px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center">'+(t.done?'✓':'')+'</div>';
     h+='<div style="flex:1;font-size:14px;color:'+(t.done?'#b0b8c8':'#1e3252')+';'+(t.done?'text-decoration:line-through':'')+'">'+t.text.replace(/</g,'&lt;')+'</div>';
+    h+='<div data-edit-todo="'+t.id+'" style="color:#1e4d8c;font-size:16px;cursor:pointer;padding:0 4px;line-height:1">✏️</div>';
     h+='<div data-del-todo="'+t.id+'" style="color:#e05c3a;font-size:16px;cursor:pointer;padding:0 4px;line-height:1">🗑</div>';
     h+='</div>';
   });
   el.innerHTML=h;
+  if(_editTodoId){var _ei=document.getElementById('todo-edit-input');if(_ei){setTimeout(function(){_ei.focus();try{_ei.setSelectionRange(_ei.value.length,_ei.value.length);}catch(e){}},50);_ei.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();saveEditTodo(_editTodoId);}else if(e.key==='Escape'){e.preventDefault();cancelEditTodo();}});}}
 }
 
 
@@ -6248,6 +6272,9 @@ function renderTodoList(){
         if(!t||t===tm)break;
         if(t.dataset&&t.dataset.togTodo){e.preventDefault();togTodo(t.dataset.togTodo);return;}
         if(t.dataset&&t.dataset.delTodo){e.preventDefault();deleteTodo(t.dataset.delTodo);return;}
+        if(t.dataset&&t.dataset.editTodo){e.preventDefault();startEditTodo(t.dataset.editTodo);return;}
+        if(t.dataset&&t.dataset.saveEdit){e.preventDefault();saveEditTodo(t.dataset.saveEdit);return;}
+        if(t.dataset&&t.dataset.cancelEdit){e.preventDefault();cancelEditTodo();return;}
         if(t.dataset&&t.dataset.clearDone){e.preventDefault();clearDoneTodos();return;}
         t=t.parentNode;
       }
@@ -7857,7 +7884,7 @@ function _escAttr(s){return _esc(s).replace(/"/g,'&quot;');}
    3) 把 VERSION_CHECK_URL 填成那个 version.json 的网址
    旧版使用者一开启 App（有网路时）就会看到更新横幅。
    ============================================================ */
-var APP_VERSION = "1.14.0";        /* ★ 每次发布新版请往上加 */
+var APP_VERSION = "1.15.0";        /* ★ 每次发布新版请往上加 */
 var VERSION_CHECK_URL = "https://spch321-sudo.github.io/321planner-sc/version.json";       /* ★ 你的 version.json 网址 */
 var _updateInfo = null;
 function checkAppUpdate(){
